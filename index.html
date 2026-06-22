@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>YISS TA Attendance</title>
+  <style>
+    /* ─── 기본 리셋 & 변수 ─────────────────────────────── */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --navy: #003764;
+      --navy-light: #0a4d8c;
+      --blue: #2196F3;
+      --green: #4CAF50;
+      --red: #c41230;
+      --orange: #FF9800;
+      --gray: #f5f5f5;
+      --gray-dark: #666;
+      --gray-border: #e0e0e0;
+      --white: #ffffff;
+      --radius: 12px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--gray);
+      color: #333;
+      min-height: 100vh;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .header {
+      background: linear-gradient(135deg, var(--navy), var(--navy-light));
+      color: white;
+      padding: 20px 16px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header h1 { font-size: 18px; font-weight: 600; }
+    .header .subtitle { font-size: 13px; opacity: 0.8; margin-top: 2px; }
+    .header .user-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,0.2);
+    }
+    .header .user-name { font-size: 14px; font-weight: 500; }
+    .header .logout-btn {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .login-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--navy), var(--navy-light));
+    }
+    .login-card {
+      background: white;
+      border-radius: var(--radius);
+      padding: 32px 24px;
+      width: 100%;
+      max-width: 360px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+    .login-card h2 { text-align: center; color: var(--navy); font-size: 20px; margin-bottom: 4px; }
+    .login-card .login-sub { text-align: center; color: var(--gray-dark); font-size: 13px; margin-bottom: 24px; }
+    .login-card input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--gray-border);
+      border-radius: 8px;
+      font-size: 15px;
+      margin-bottom: 12px;
+      background: white;
+    }
+    .login-card button {
+      width: 100%;
+      padding: 14px;
+      background: var(--navy);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .login-card button:active { opacity: 0.9; }
+    .tab-bar {
+      display: flex;
+      background: white;
+      border-bottom: 1px solid var(--gray-border);
+      position: sticky;
+      top: 0;
+      z-index: 90;
+    }
+    .tab-btn {
+      flex: 1; padding: 12px 8px; text-align: center; font-size: 14px; font-weight: 500;
+      color: var(--gray-dark); background: none; border: none;
+      border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.2s;
+    }
+    .tab-btn.active { color: var(--navy); border-bottom-color: var(--navy); }
+    .content { padding: 16px; max-width: 480px; margin: 0 auto; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .status-card {
+      background: white; border-radius: var(--radius); padding: 20px;
+      margin-bottom: 16px; box-shadow: var(--shadow); text-align: center;
+    }
+    .status-card .status-icon { font-size: 48px; margin-bottom: 8px; }
+    .status-card .status-text { font-size: 14px; color: var(--gray-dark); margin-bottom: 4px; }
+    .status-card .status-detail { font-size: 16px; font-weight: 600; color: var(--navy); }
+    .action-buttons { display: flex; gap: 12px; margin-bottom: 16px; }
+    .action-btn {
+      flex: 1; padding: 16px; border: none; border-radius: var(--radius);
+      font-size: 16px; font-weight: 600; color: white; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      transition: transform 0.1s;
+    }
+    .action-btn:active { transform: scale(0.97); }
+    .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .action-btn.check-in { background: var(--green); }
+    .action-btn.check-out { background: var(--blue); }
+    .action-btn .btn-icon { font-size: 28px; }
+    .gps-status {
+      background: white; border-radius: var(--radius); padding: 12px 16px;
+      margin-bottom: 16px; box-shadow: var(--shadow);
+      display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--gray-dark);
+    }
+    .gps-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--orange); flex-shrink: 0; }
+    .gps-dot.good { background: var(--green); }
+    .gps-dot.bad { background: var(--red); }
+    .toast {
+      position: fixed; bottom: 24px; left: 16px; right: 16px; max-width: 448px;
+      margin: 0 auto; padding: 14px 16px; border-radius: var(--radius);
+      color: white; font-size: 14px; font-weight: 500; z-index: 1000;
+      transform: translateY(100px); opacity: 0; transition: all 0.3s; text-align: center;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { background: var(--green); }
+    .toast.error { background: var(--red); }
+    .toast.info { background: var(--blue); }
+    .records-summary {
+      background: white; border-radius: var(--radius); padding: 16px;
+      margin-bottom: 16px; box-shadow: var(--shadow);
+      display: flex; justify-content: space-around; text-align: center;
+    }
+    .summary-item .label { font-size: 12px; color: var(--gray-dark); }
+    .summary-item .value { font-size: 20px; font-weight: 700; color: var(--navy); margin-top: 2px; }
+    .record-card {
+      background: white; border-radius: var(--radius); padding: 14px 16px;
+      margin-bottom: 10px; box-shadow: var(--shadow);
+    }
+    .record-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .record-date { font-size: 14px; font-weight: 600; color: var(--navy); }
+    .record-status { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+    .record-status.정상 { background: #e8f5e9; color: var(--green); }
+    .record-status.출근 { background: #e3f2fd; color: var(--blue); }
+    .record-status.수정요청 { background: #fff3e0; color: var(--orange); }
+    .record-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--gray-dark); margin-bottom: 4px; }
+    .record-row .label { color: #999; }
+    .record-desc-area { margin-top: 8px; border-top: 1px solid var(--gray-border); padding-top: 8px; }
+    .record-desc-area textarea {
+      width: 100%; padding: 8px; border: 1px solid var(--gray-border);
+      border-radius: 6px; font-size: 13px; resize: vertical; min-height: 60px; font-family: inherit;
+    }
+    .record-desc-area .save-desc-btn {
+      margin-top: 6px; padding: 6px 14px; background: var(--navy); color: white;
+      border: none; border-radius: 6px; font-size: 12px; cursor: pointer; float: right;
+    }
+    .loading { text-align: center; padding: 40px; color: var(--gray-dark); }
+    .spinner {
+      width: 32px; height: 32px; border: 3px solid var(--gray-border);
+      border-top-color: var(--navy); border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--gray-dark); }
+    .empty-state .icon { font-size: 48px; margin-bottom: 8px; }
+    .consent-screen {
+      display: none; flex-direction: column; align-items: center; justify-content: flex-start;
+      min-height: 100vh; padding: 20px;
+      background: linear-gradient(135deg, var(--navy), var(--navy-light)); overflow-y: auto;
+    }
+    .consent-card {
+      background: white; border-radius: var(--radius); padding: 24px 20px;
+      width: 100%; max-width: 420px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); margin: 20px 0;
+    }
+    .consent-card h2 { color: var(--navy); font-size: 17px; margin-bottom: 16px; text-align: center; }
+    .consent-section { margin-bottom: 14px; }
+    .consent-section h3 { font-size: 13px; font-weight: 600; color: var(--navy); margin-bottom: 6px; }
+    .consent-section p, .consent-section ul { font-size: 12.5px; color: #444; line-height: 1.6; }
+    .consent-section ul { padding-left: 18px; }
+    .consent-section ul li { margin-bottom: 3px; }
+    .consent-divider { border: none; border-top: 1px solid var(--gray-border); margin: 14px 0; }
+    .consent-checkbox {
+      display: flex; align-items: flex-start; gap: 10px; margin: 16px 0;
+      padding: 12px; background: var(--gray); border-radius: 8px;
+    }
+    .consent-checkbox input[type="checkbox"] { width: 20px; height: 20px; margin-top: 2px; flex-shrink: 0; }
+    .consent-checkbox label { font-size: 13px; font-weight: 500; color: #333; cursor: pointer; }
+    .consent-buttons { display: flex; gap: 10px; }
+    .consent-buttons button {
+      flex: 1; padding: 12px; border: none; border-radius: 8px;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    .consent-buttons .btn-agree { background: var(--navy); color: white; }
+    .consent-buttons .btn-agree:disabled { opacity: 0.4; cursor: not-allowed; }
+    .consent-buttons .btn-decline { background: var(--gray-border); color: var(--gray-dark); }
+  </style>
+</head>
+<body>
+
+<!-- ═══ 로그인 화면 ═══ -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <h2>📋 YISS TA Attendance</h2>
+    <p class="login-sub">조교 출퇴근 관리 시스템</p>
+    <input type="text" id="loginName" placeholder="학번 (Student ID)" autocomplete="off">
+    <input type="tel" id="loginBirth" placeholder="생년월일 6자리 (YYMMDD)" maxlength="6" pattern="[0-9]*" inputmode="numeric" autocomplete="off">
+    <button onclick="handleLogin()" id="loginBtn">로그인</button>
+    <p id="loginError" style="color:var(--red);font-size:12px;text-align:center;margin-top:8px;display:none;"></p>
+  </div>
+</div>
+
+<!-- ═══ 개인정보 동의 화면 ═══ -->
+<div id="consentScreen" class="consent-screen">
+  <div class="consent-card">
+    <h2>🔒 개인정보 수집·이용 동의</h2>
+    <div class="consent-section"><h3>1. 수집 목적</h3><p>YISS/WAY 프로그램 조교 출퇴근 관리 및 근로장학금 산정</p></div>
+    <hr class="consent-divider">
+    <div class="consent-section"><h3>2. 수집 항목</h3><ul><li>학번, 이름 (본인 식별)</li><li>GPS 위치 좌표 (출근·퇴근 시 각 1회)</li><li>출퇴근 시간</li></ul></div>
+    <hr class="consent-divider">
+    <div class="consent-section"><h3>3. 보유 및 이용 기간</h3><p>해당 프로그램 종료 후 6개월까지 보유하며, 장학금 지급 완료 후 GPS 좌표 데이터는 파기합니다.</p></div>
+    <hr class="consent-divider">
+    <div class="consent-section"><h3>4. 동의 거부 시 불이익</h3><p>동의하지 않으실 경우 본 시스템을 통한 출퇴근 체크인이 불가하며, 별도의 수기 출석 절차로 대체됩니다.</p></div>
+    <hr class="consent-divider">
+    <div class="consent-section"><h3>5. 안내 사항</h3><ul><li>GPS 위치는 출근·퇴근 버튼 클릭 시에만 수집되며, 실시간 추적은 하지 않습니다.</li><li>수집된 위치 정보는 캠퍼스 내 출근 여부 확인 목적으로만 사용됩니다.</li><li>수집된 개인정보는 제3자에게 제공되지 않습니다.</li></ul></div>
+    <div style="background:#FFF3E0;border:1px solid #FFB74D;border-radius:8px;padding:12px;margin:12px 0;">
+      <p style="font-size:13px;color:#E65100;font-weight:600;margin-bottom:4px;">📍 브라우저 위치 권한 허용 필요</p>
+      <p style="font-size:12px;color:#666;">동의 후 브라우저에서 "위치 접근 허용" 팝업이 뜨면 반드시 <b>허용</b>을 눌러주세요. 차단 시 출퇴근 체크인이 불가합니다.</p>
+    </div>
+    <div class="consent-checkbox">
+      <input type="checkbox" id="consentCheck" onchange="updateConsentButton()">
+      <label for="consentCheck">위 개인정보 수집·이용에 동의합니다.</label>
+    </div>
+    <div class="consent-buttons">
+      <button class="btn-decline" onclick="declineConsent()">동의 안함</button>
+      <button class="btn-agree" id="consentAgreeBtn" onclick="acceptConsent()" disabled>동의 후 계속</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 메인 화면 ═══ -->
+<div id="mainScreen" style="display:none;">
+  <div class="header">
+    <h1>📋 YISS TA Attendance</h1>
+    <div class="subtitle">조교 출퇴근 관리</div>
+    <div class="user-info">
+      <span class="user-name" id="userName"></span>
+      <button class="logout-btn" onclick="handleLogout()">로그아웃</button>
+    </div>
+  </div>
+  <div id="noticesArea" style="display:none;"></div>
+  <div id="quickLinks" style="display:none;padding:0 16px;margin-bottom:8px;">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <a id="linkManual" href="#" target="_blank" style="display:none;flex:1;text-align:center;padding:10px;background:white;border-radius:10px;text-decoration:none;color:var(--navy);font-size:13px;font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,0.1);">📄 조교 매뉴얼</a>
+      <a id="linkCertificate" href="#" target="_blank" style="display:none;flex:1;text-align:center;padding:10px;background:white;border-radius:10px;text-decoration:none;color:var(--navy);font-size:13px;font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,0.1);">📊 업무 공유 시트</a>
+      <a onclick="openChecklist()" style="flex:1;text-align:center;padding:10px;background:white;border-radius:10px;text-decoration:none;color:var(--navy);font-size:13px;font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,0.1);cursor:pointer;">✅ 업무 체크리스트</a>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('checkin')">출퇴근</button>
+    <button class="tab-btn" onclick="switchTab('records')">내 기록</button>
+    <button class="tab-btn" onclick="switchTab('calendar')">📅 일정</button>
+  </div>
+  <div class="content">
+    <div id="tab-checkin" class="tab-content active">
+      <div class="status-card" id="statusCard">
+        <div class="status-icon">⏳</div>
+        <div class="status-text">오늘의 상태</div>
+        <div class="status-detail" id="statusDetail">확인 중...</div>
+      </div>
+      <div class="gps-status" id="gpsStatus">
+        <div class="gps-dot" id="gpsDot"></div>
+        <span id="gpsText">GPS 확인 중...</span>
+      </div>
+      <div class="action-buttons">
+        <button class="action-btn check-in" id="checkInBtn" onclick="handleCheckIn()" disabled><span class="btn-icon">🟢</span>출근</button>
+        <button class="action-btn check-out" id="checkOutBtn" onclick="handleCheckOut()" disabled><span class="btn-icon">🔵</span>퇴근</button>
+      </div>
+      <div style="text-align:center;padding:10px 16px;margin-bottom:8px;background:#FFF8E1;border-radius:8px;border:1px solid #FFE082;">
+        <div style="font-size:12px;color:#F57F17;margin-bottom:4px;">🍽️ 점심시간 1시간은 근무시간에서 자동 제외됩니다.</div>
+        <div style="font-size:12px;color:#F57F17;margin-bottom:4px;">⏰ 출근/퇴근은 하루에 각 1회만 가능합니다.</div>
+        <div style="font-size:12px;color:#F57F17;">📝 퇴근 후 근로내용을 꼭 입력해주세요.</div>
+      </div>
+    </div>
+    <div id="tab-records" class="tab-content">
+      <div id="mileage-notice" style="margin:0 0 12px;background:linear-gradient(135deg,#FFF8EC,#FFF3DB);border:1.5px solid #E8D5A8;border-radius:12px;padding:14px 16px;position:relative;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="font-size:15px;">🏅</span>
+          <strong style="font-size:12px;color:#8B6914;">리더십 마일리지제 점수 부여 안내</strong>
+          <button onclick="document.getElementById('mileage-notice').style.display='none'" style="margin-left:auto;background:none;border:none;font-size:16px;color:#C8A84E;cursor:pointer;padding:2px 4px;">✕</button>
+        </div>
+        <div style="font-size:11.5px;color:#5C4A1E;line-height:1.8;">
+          <div style="margin-bottom:8px;">📎 <a href="https://leadership.yonsei.ac.kr/leadership/education/mileage.do" target="_blank" rel="noopener" style="color:#003087;text-decoration:underline;font-weight:600;">리더십 개발 인증 마일리지제 안내 바로가기</a></div>
+          <div style="background:white;border-radius:8px;padding:10px 12px;border:1px solid #E8D5A8;">
+            <div style="font-weight:600;margin-bottom:5px;color:#003087;font-size:11.5px;">2026 국제하계대학 조교 활동 완료 시</div>
+            <div style="padding-left:4px;font-size:11.5px;">
+              가. 국제처 국제팀 활동인증서 발급 <span style="color:#999;">(8월 6일(목) 이후)</span><br>
+              나. 일반조교: 마일리지 <strong style="color:#003087;">50점</strong> 부여<br>
+              다. 팀장조교: 마일리지 <strong style="color:#C8952C;">80점</strong> 부여
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="recordsLoading" class="loading"><div class="spinner"></div>기록을 불러오는 중...</div>
+      <div id="recordsContent" style="display:none;"></div>
+    </div>
+    <div id="tab-calendar" class="tab-content">
+      <div id="calendarLoading" class="loading"><div class="spinner"></div>일정을 불러오는 중...</div>
+      <div id="calendarContent" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ═══ 업무 체크리스트 모달 ═══ -->
+<div id="checklist-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;justify-content:center;align-items:flex-start;padding:20px;overflow-y:auto;">
+  <div style="background:white;border-radius:16px;width:100%;max-width:500px;margin:20px auto;box-shadow:0 12px 40px rgba(0,0,0,0.2);overflow:hidden;">
+    <div style="background:var(--navy);color:white;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-size:15px;font-weight:700;">✅ 업무 체크리스트</div>
+        <div id="cl-building-name" style="font-size:11px;color:#8AABDE;margin-top:2px;"></div>
+      </div>
+      <button onclick="closeChecklist()" style="background:none;border:none;color:white;font-size:20px;cursor:pointer;">✕</button>
+    </div>
+    <div style="padding:12px 20px;background:#F5F7FA;border-bottom:1px solid #E2E6ED;">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:#6B7280;margin-bottom:6px;">
+        <span>완료 진행률</span><span id="cl-progress-text">0 / 0</span>
+      </div>
+      <div style="background:#E2E6ED;border-radius:4px;height:6px;overflow:hidden;">
+        <div id="cl-progress-bar" style="background:linear-gradient(90deg,var(--navy),#C8952C);height:100%;border-radius:4px;transition:width 0.3s;width:0%;"></div>
+      </div>
+    </div>
+    <div id="cl-content" style="padding:16px 20px;max-height:60vh;overflow-y:auto;">
+      <div style="text-align:center;color:#6B7280;padding:40px 0;">불러오는 중...</div>
+    </div>
+    <div style="padding:12px 20px;border-top:1px solid #E2E6ED;text-align:center;">
+      <button onclick="resetChecklist()" style="background:none;border:1px solid #E2E6ED;border-radius:8px;padding:8px 16px;font-size:11px;color:#6B7280;cursor:pointer;">체크 초기화</button>
+      <div style="font-size:10px;color:#9CA3AF;margin-top:6px;">체크 상태는 이 기기에만 저장됩니다</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ═══════════════════════════════════════════════════════
+  // ★ API 설정 — 배포 후 실제 URL로 교체
+  // ═══════════════════════════════════════════════════════
+  var API_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
+
+  // ★ fetch 래퍼 — google.script.run 대체
+  function callAPI(action, params) {
+    return fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: action, params: params || {} })
+    })
+    .then(function(res) { return res.json(); })
+    .catch(function(err) {
+      console.error('API error:', action, err);
+      throw err;
+    });
+  }
+
+  // ─── 전역 상태 ────────────────────────────────────────
+  var currentTA = null;
+  var currentGPS = null;
+  var gpsWatchId = null;
+
+  // ─── 초기화 ───────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', function() {
+    var savedTA = localStorage.getItem('yiss_ta');
+    var hasConsent = localStorage.getItem('yiss_consent');
+    if (savedTA && hasConsent) {
+      try {
+        currentTA = JSON.parse(savedTA);
+        // 자동 로그아웃 체크 (7일)
+        var lastAccess = localStorage.getItem('yiss_last_access');
+        if (lastAccess && (Date.now() - parseInt(lastAccess)) > 7 * 86400000) {
+          localStorage.removeItem('yiss_ta');
+          localStorage.removeItem('yiss_last_access');
+          currentTA = null;
+          return;
+        }
+        showMainScreen();
+      } catch(e) {
+        localStorage.removeItem('yiss_ta');
+      }
+    }
+    document.getElementById('loginBirth').addEventListener('keyup', function(e) {
+      if (e.key === 'Enter') handleLogin();
+    });
+    document.getElementById('checklist-modal').addEventListener('click', function(e) {
+      if (e.target === this) closeChecklist();
+    });
+  });
+
+  // ─── 로그인 ───────────────────────────────────────────
+  function handleLogin() {
+    var taId = document.getElementById('loginName').value.trim();
+    var birth = document.getElementById('loginBirth').value.trim();
+    var errorEl = document.getElementById('loginError');
+    errorEl.style.display = 'none';
+
+    if (!taId) { errorEl.textContent = '학번을 입력해주세요.'; errorEl.style.display = 'block'; return; }
+    if (!birth || birth.length !== 6 || !/^\d{6}$/.test(birth)) {
+      errorEl.textContent = '생년월일 6자리(YYMMDD)를 정확히 입력해주세요.';
+      errorEl.style.display = 'block'; return;
+    }
+
+    document.getElementById('loginBtn').disabled = true;
+    document.getElementById('loginBtn').textContent = '확인 중...';
+
+    callAPI('verifyLogin', { taId: taId, birth: birth })
+      .then(function(result) {
+        document.getElementById('loginBtn').disabled = false;
+        document.getElementById('loginBtn').textContent = '로그인';
+        if (!result.success) { errorEl.textContent = result.message; errorEl.style.display = 'block'; return; }
+
+        var lastLogin = localStorage.getItem('yiss_last_login');
+        if (lastLogin) {
+          try {
+            var last = JSON.parse(lastLogin);
+            if (Date.now() - last.time < 300000 && last.ta_id !== result.data.ta_id) {
+              console.warn('⚠️ 같은 기기에서 5분 내 다른 계정 로그인');
+            }
+          } catch(e) {}
+        }
+        localStorage.setItem('yiss_last_login', JSON.stringify({ ta_id: result.data.ta_id, time: Date.now() }));
+        currentTA = result.data;
+        localStorage.setItem('yiss_ta', JSON.stringify(currentTA));
+        if (!localStorage.getItem('yiss_consent')) { showConsentScreen(); } else { showMainScreen(); }
+      })
+      .catch(function(err) {
+        document.getElementById('loginBtn').disabled = false;
+        document.getElementById('loginBtn').textContent = '로그인';
+        errorEl.textContent = '서버 오류가 발생했습니다. 다시 시도해주세요.';
+        errorEl.style.display = 'block';
+      });
+  }
+
+  function handleLogout() {
+    currentTA = null;
+    localStorage.removeItem('yiss_ta');
+    localStorage.removeItem('yiss_last_access');
+    stopGPS();
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('mainScreen').style.display = 'none';
+    document.getElementById('consentScreen').style.display = 'none';
+    document.getElementById('loginName').value = '';
+    document.getElementById('loginBirth').value = '';
+    document.getElementById('loginError').style.display = 'none';
+  }
+
+  // ─── 동의 ────────────────────────────────────────────
+  function showConsentScreen() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('consentScreen').style.display = 'flex';
+    document.getElementById('mainScreen').style.display = 'none';
+    document.getElementById('consentCheck').checked = false;
+    updateConsentButton();
+  }
+  function updateConsentButton() { document.getElementById('consentAgreeBtn').disabled = !document.getElementById('consentCheck').checked; }
+  function acceptConsent() { localStorage.setItem('yiss_consent', new Date().toISOString()); document.getElementById('consentScreen').style.display = 'none'; showMainScreen(); }
+  function declineConsent() {
+    currentTA = null; localStorage.removeItem('yiss_ta');
+    document.getElementById('consentScreen').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+    showToast('동의하지 않으면 시스템을 이용할 수 없습니다. 수기 출석으로 대체됩니다.', 'info');
+  }
+
+  // ─── 메인 화면 ───────────────────────────────────────
+  function showMainScreen() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('consentScreen').style.display = 'none';
+    document.getElementById('mainScreen').style.display = 'block';
+    localStorage.setItem('yiss_last_access', String(Date.now()));
+
+    var isLeader = (currentTA.is_leader === true || currentTA.is_leader === 'TRUE');
+    var leaderBadge = isLeader ? ' <span style="background:#C8952C;color:white;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:6px;vertical-align:middle;">팀장</span>' : '';
+    document.getElementById('userName').innerHTML = currentTA.name + ' | ' + currentTA.building_name + leaderBadge;
+
+    loadTodayStatus();
+    startGPS();
+    loadNotices();
+    loadQuickLinks();
+  }
+
+  // ─── 오늘 상태 ───────────────────────────────────────
+  function loadTodayStatus() {
+    callAPI('getTodayStatus', { ta_id: currentTA.ta_id })
+      .then(function(result) { updateStatusUI(result); });
+  }
+
+  function updateStatusUI(result) {
+    var icon = document.querySelector('.status-icon');
+    var detail = document.getElementById('statusDetail');
+    var checkInBtn = document.getElementById('checkInBtn');
+    var checkOutBtn = document.getElementById('checkOutBtn');
+    if (result.status === 'none') { icon.textContent = '⏳'; detail.textContent = '출근 전'; checkInBtn.disabled = !currentGPS; checkOutBtn.disabled = true; }
+    else if (result.status === 'checked_in') { icon.textContent = '💼'; detail.textContent = result.message; checkInBtn.disabled = true; checkOutBtn.disabled = !currentGPS; }
+    else if (result.status === 'checked_out') { icon.textContent = '✅'; detail.textContent = result.message; checkInBtn.disabled = true; checkOutBtn.disabled = true; }
+    else { icon.textContent = '❓'; detail.textContent = result.message || '상태 확인 오류'; }
+  }
+
+  // ─── GPS ──────────────────────────────────────────────
+  function startGPS() {
+    if (!navigator.geolocation) { updateGPSUI(false, 'GPS를 지원하지 않는 브라우저입니다.'); return; }
+    updateGPSUI(null, 'GPS 위치 확인 중...');
+    gpsWatchId = navigator.geolocation.watchPosition(
+      function(pos) {
+        currentGPS = { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy };
+        var accStr = Math.round(currentGPS.accuracy) + 'm';
+        if (currentGPS.accuracy <= 150) { updateGPSUI(true, '위치 확인됨 (정확도: ' + accStr + ')'); }
+        else { updateGPSUI(false, '정확도 낮음 (' + accStr + ') — 실외로 이동해주세요'); }
+        loadTodayStatus();
+      },
+      function(err) {
+        currentGPS = null;
+        if (err.code === 1) { updateGPSUI(false, '위치 권한이 차단되었습니다. 브라우저 설정에서 허용해주세요.'); }
+        else { updateGPSUI(false, 'GPS 오류: ' + err.message); }
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+    );
+  }
+  function stopGPS() { if (gpsWatchId !== null) { navigator.geolocation.clearWatch(gpsWatchId); gpsWatchId = null; } currentGPS = null; }
+  function updateGPSUI(good, text) {
+    document.getElementById('gpsDot').className = 'gps-dot' + (good === true ? ' good' : good === false ? ' bad' : '');
+    document.getElementById('gpsText').textContent = text;
+  }
+
+  // ─── 출퇴근 ──────────────────────────────────────────
+  function handleCheckIn() {
+    if (!currentGPS) { showToast('GPS 위치를 확인할 수 없습니다.', 'error'); return; }
+    document.getElementById('checkInBtn').disabled = true;
+    showToast('출근 처리 중...', 'info');
+    callAPI('checkIn', { ta_id: currentTA.ta_id, lat: currentGPS.lat, lng: currentGPS.lng, accuracy: currentGPS.accuracy, userAgent: navigator.userAgent })
+      .then(function(result) { showToast(result.message, result.success ? 'success' : 'error'); loadTodayStatus(); })
+      .catch(function(err) { showToast('오류: ' + err.message, 'error'); loadTodayStatus(); });
+  }
+
+  function handleCheckOut() {
+    if (!currentGPS) { showToast('GPS 위치를 확인할 수 없습니다.', 'error'); return; }
+    document.getElementById('checkOutBtn').disabled = true;
+    showToast('퇴근 처리 중...', 'info');
+    callAPI('checkOut', { ta_id: currentTA.ta_id, lat: currentGPS.lat, lng: currentGPS.lng, accuracy: currentGPS.accuracy })
+      .then(function(result) {
+        showToast(result.message, result.success ? 'success' : 'error');
+        loadTodayStatus();
+        if (result.success) showWorkDescPopup();
+      })
+      .catch(function(err) { showToast('오류: ' + err.message, 'error'); loadTodayStatus(); });
+  }
+
+  // ─── 퇴근 후 근로내용 팝업 ───────────────────────────
+  function showWorkDescPopup() {
+    var overlay = document.createElement('div');
+    overlay.id = 'workDescOverlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    overlay.innerHTML =
+      '<div style="background:white;border-radius:16px;padding:24px;width:100%;max-width:400px;box-shadow:0 8px 30px rgba(0,0,0,0.2);">' +
+      '<div style="text-align:center;margin-bottom:16px;"><div style="font-size:32px;margin-bottom:8px;">✅</div><h3 style="color:var(--navy);font-size:16px;margin-bottom:4px;">퇴근 완료!</h3><p style="font-size:13px;color:var(--gray-dark);">오늘의 근로내용을 간단히 입력해주세요.</p></div>' +
+      '<textarea id="popupWorkDesc" placeholder="예: 강의실 점검, 인포데스크 안내, 시험 감독 등" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:10px;font-size:14px;min-height:80px;font-family:inherit;resize:none;margin-bottom:12px;"></textarea>' +
+      '<div style="display:flex;gap:8px;"><button onclick="closeWorkDescPopup()" style="flex:1;padding:12px;background:#f5f5f5;border:none;border-radius:10px;font-size:14px;cursor:pointer;color:#666;">나중에 입력</button><button onclick="saveWorkDescPopup()" style="flex:1;padding:12px;background:var(--navy);color:white;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">저장</button></div></div>';
+    document.body.appendChild(overlay);
+  }
+
+  function saveWorkDescPopup() {
+    var desc = document.getElementById('popupWorkDesc').value.trim();
+    if (!desc) { showToast('근로내용을 입력해주세요.', 'error'); return; }
+    var now = new Date(); var kst = new Date(now.getTime() + 9 * 3600000);
+    var todayStr = kst.toISOString().split('T')[0].replace(/-/g, '');
+    var logId = todayStr + '_' + currentTA.ta_id;
+    callAPI('saveWorkDescription', { ta_id: currentTA.ta_id, logId: logId, desc: desc })
+      .then(function(result) { showToast(result.success ? '근로내용 저장 완료!' : result.message, result.success ? 'success' : 'error'); closeWorkDescPopup(); })
+      .catch(function() { showToast('저장 오류', 'error'); closeWorkDescPopup(); });
+  }
+  function closeWorkDescPopup() { var o = document.getElementById('workDescOverlay'); if (o) o.remove(); }
+
+  // ─── 탭 전환 ─────────────────────────────────────────
+  function switchTab(tabName) {
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
+    event.target.classList.add('active');
+    document.getElementById('tab-' + tabName).classList.add('active');
+    if (tabName === 'records') loadRecords();
+    if (tabName === 'calendar') loadCalendar();
+  }
+
+  // ─── 내 기록 ─────────────────────────────────────────
+  function loadRecords() {
+    document.getElementById('recordsLoading').style.display = 'block';
+    document.getElementById('recordsContent').style.display = 'none';
+    callAPI('getMyRecords', { ta_id: currentTA.ta_id })
+      .then(function(result) {
+        document.getElementById('recordsLoading').style.display = 'none';
+        document.getElementById('recordsContent').style.display = 'block';
+        if (!result.success) { document.getElementById('recordsContent').innerHTML = '<div class="empty-state"><div class="icon">⚠️</div>' + result.message + '</div>'; return; }
+        renderRecords(result.data);
+      })
+      .catch(function() {
+        document.getElementById('recordsLoading').style.display = 'none';
+        document.getElementById('recordsContent').style.display = 'block';
+        document.getElementById('recordsContent').innerHTML = '<div class="empty-state"><div class="icon">⚠️</div>기록을 불러올 수 없습니다.</div>';
+      });
+  }
+
+  function renderRecords(data) {
+    var container = document.getElementById('recordsContent');
+    var html = '<div class="records-summary">';
+    html += '<div class="summary-item"><div class="label">총 근무일</div><div class="value">' + data.records.length + '일</div></div>';
+    html += '<div class="summary-item"><div class="label">총 근무시간</div><div class="value">' + data.totalHours + 'h</div></div>';
+    html += '<div class="summary-item"><div class="label">예상 장학금</div><div class="value">₩' + data.totalWage.toLocaleString() + '</div></div></div>';
+    if (data.records.length === 0) { html += '<div class="empty-state"><div class="icon">📭</div>아직 근무 기록이 없습니다.</div>'; container.innerHTML = html; return; }
+    data.records.slice().reverse().forEach(function(r) {
+      html += '<div class="record-card"><div class="record-header"><span class="record-date">' + r.date + '</span><span class="record-status ' + r.status + '">' + r.status + '</span></div>';
+      html += '<div class="record-row"><span class="label">출근</span><span>' + r.check_in_time + ' (' + r.check_in_building + ')</span></div>';
+      html += '<div class="record-row"><span class="label">퇴근</span><span>' + (r.check_out_time || '-') + '</span></div>';
+      html += '<div class="record-row"><span class="label">근무시간</span><span>' + (r.work_hours ? r.work_hours + '시간' : '-') + '</span></div>';
+      html += '<div class="record-row"><span class="label">누적</span><span>' + r.cumulative_hours + '시간</span></div>';
+      html += '<div class="record-desc-area"><textarea id="desc_' + r.log_id + '" placeholder="근로내용을 입력하세요">' + escapeHtml(r.work_description) + '</textarea>';
+      html += '<button class="save-desc-btn" onclick="saveDescription(\'' + r.log_id + '\')">저장</button><div style="clear:both;"></div></div>';
+      html += '<div style="text-align:right;margin-top:6px;"><button onclick="toggleEditRequest(\'' + r.log_id + '\')" style="background:none;border:none;color:var(--orange);font-size:12px;cursor:pointer;padding:4px 8px;">⚠️ 시간 수정요청</button></div>';
+      html += '<div id="editReq_' + r.log_id + '" style="display:none;margin-top:8px;padding:12px;background:#fff8e1;border-radius:8px;border:1px solid #ffe082;">';
+      html += '<div style="font-size:13px;font-weight:600;color:var(--orange);margin-bottom:8px;">시간 수정요청</div>';
+      html += '<select id="editType_' + r.log_id + '" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;margin-bottom:8px;"><option value="시간수정">출퇴근 시간 수정</option><option value="기록삭제">이 기록 삭제 요청</option></select>';
+      html += '<input id="editVal_' + r.log_id + '" type="text" placeholder="수정할 시간 (예: 출근 09:00, 퇴근 17:00)" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;margin-bottom:8px;">';
+      html += '<textarea id="editReason_' + r.log_id + '" placeholder="수정 사유를 입력해주세요" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;min-height:50px;font-family:inherit;margin-bottom:8px;"></textarea>';
+      html += '<div style="display:flex;gap:8px;justify-content:flex-end;"><button onclick="toggleEditRequest(\'' + r.log_id + '\')" style="padding:6px 14px;background:#eee;border:none;border-radius:6px;font-size:12px;cursor:pointer;">취소</button>';
+      html += '<button onclick="submitEditReq(\'' + r.log_id + '\')" style="padding:6px 14px;background:var(--orange);color:white;border:none;border-radius:6px;font-size:12px;cursor:pointer;">요청 제출</button></div></div></div>';
+    });
+    container.innerHTML = html;
+  }
+
+  function saveDescription(logId) {
+    var textarea = document.getElementById('desc_' + logId);
+    if (!textarea) return;
+    callAPI('saveWorkDescription', { ta_id: currentTA.ta_id, logId: logId, desc: textarea.value.trim() })
+      .then(function(result) { showToast(result.success ? '근로내용 저장 완료' : result.message, result.success ? 'success' : 'error'); });
+  }
+
+  function toggleEditRequest(logId) {
+    var el = document.getElementById('editReq_' + logId);
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  }
+
+  function submitEditReq(logId) {
+    var type = document.getElementById('editType_' + logId).value;
+    var val = document.getElementById('editVal_' + logId).value.trim();
+    var reason = document.getElementById('editReason_' + logId).value.trim();
+    if (!reason) { showToast('수정 사유를 입력해주세요.', 'error'); return; }
+    callAPI('submitEditRequest', { ta_id: currentTA.ta_id, logId: logId, type: type, val: val, reason: reason })
+      .then(function(result) { showToast(result.message, result.success ? 'success' : 'error'); if (result.success) { toggleEditRequest(logId); loadRecords(); } });
+  }
+
+  // ─── 공지사항 ────────────────────────────────────────
+  function loadNotices() {
+    callAPI('getActiveNotices')
+      .then(function(notices) {
+        var area = document.getElementById('noticesArea');
+        if (!notices || notices.length === 0) { area.style.display = 'none'; return; }
+        var h = '';
+        notices.forEach(function(n) {
+          var isHigh = n.priority === 'high';
+          h += '<div style="background:' + (isHigh ? '#FFEBEE' : '#E3F2FD') + ';border-left:4px solid ' + (isHigh ? '#E53935' : '#90CAF9') + ';border-radius:8px;padding:10px 14px;margin-bottom:6px;">';
+          h += '<div style="font-weight:600;font-size:13px;color:#333;">' + (isHigh ? '🔔' : '📢') + ' ' + escapeHtml(n.title) + '</div>';
+          if (n.content) h += '<div style="font-size:12px;color:#555;margin-top:4px;">' + escapeHtml(n.content) + '</div>';
+          h += '</div>';
+        });
+        area.innerHTML = '<div style="padding:8px 16px 0;">' + h + '</div>';
+        area.style.display = 'block';
+      });
+  }
+
+  // ─── 빠른 링크 ───────────────────────────────────────
+  function loadQuickLinks() {
+    document.getElementById('quickLinks').style.display = 'block';
+    callAPI('getLinksConfig')
+      .then(function(links) {
+        if (links.manualUrl) { var el = document.getElementById('linkManual'); el.href = links.manualUrl; el.style.display = 'block'; }
+        if (links.certificateUrl) { var el = document.getElementById('linkCertificate'); el.href = links.certificateUrl; el.style.display = 'block'; }
+      });
+  }
+
+  // ─── 캘린더 ──────────────────────────────────────────
+  var calendarData = null;
+  var calendarMonth = null;
+
+  function loadCalendar() {
+    if (calendarData) { renderCalendar(); return; }
+    document.getElementById('calendarLoading').style.display = 'block';
+    document.getElementById('calendarContent').style.display = 'none';
+    callAPI('getScheduleData')
+      .then(function(events) {
+        calendarData = events || [];
+        calendarMonth = { year: 2026, month: 6 };
+        var now = new Date(); var kst = new Date(now.getTime() + 9 * 3600000);
+        if (kst.getFullYear() === 2026 && kst.getMonth() >= 5 && kst.getMonth() <= 7) { calendarMonth = { year: 2026, month: kst.getMonth() + 1 }; }
+        document.getElementById('calendarLoading').style.display = 'none';
+        document.getElementById('calendarContent').style.display = 'block';
+        renderCalendar();
+      })
+      .catch(function() {
+        document.getElementById('calendarLoading').style.display = 'none';
+        document.getElementById('calendarContent').innerHTML = '<div style="text-align:center;color:var(--gray-dark);padding:40px;">일정을 불러올 수 없습니다.</div>';
+        document.getElementById('calendarContent').style.display = 'block';
+      });
+  }
+
+  function changeMonth(delta) {
+    calendarMonth.month += delta;
+    if (calendarMonth.month > 12) { calendarMonth.month = 1; calendarMonth.year++; }
+    if (calendarMonth.month < 1) { calendarMonth.month = 12; calendarMonth.year--; }
+    renderCalendar();
+  }
+
+  function renderCalendar() {
+    var y = calendarMonth.year, m = calendarMonth.month;
+    var monthNames = ['','1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+    var dayNames = ['월','화','수','목','금'];
+    var lastDate = new Date(y, m, 0).getDate();
+    var catColors = { '조교일정': { bg:'#E3F2FD', border:'#2196F3', dot:'#2196F3' }, '학사일정': { bg:'#FCE4EC', border:'#E91E63', dot:'#E91E63' }, '비교과': { bg:'#E8F5E9', border:'#4CAF50', dot:'#4CAF50' } };
+    var eventsByDate = {}; var monthStr = y + '-' + String(m).padStart(2,'0');
+    calendarData.forEach(function(ev) { if (ev.date && ev.date.startsWith(monthStr)) { if (!eventsByDate[ev.date]) eventsByDate[ev.date] = []; eventsByDate[ev.date].push(ev); } });
+
+    var h = '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;margin-bottom:8px;">';
+    h += '<button onclick="changeMonth(-1)" style="background:none;border:1px solid var(--gray-border);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:16px;">◀</button>';
+    h += '<span style="font-size:18px;font-weight:700;color:var(--navy);">' + y + '년 ' + monthNames[m] + '</span>';
+    h += '<button onclick="changeMonth(1)" style="background:none;border:1px solid var(--gray-border);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:16px;">▶</button></div>';
+    h += '<div style="display:flex;gap:12px;margin-bottom:12px;font-size:11px;color:var(--gray-dark);">';
+    for (var cat in catColors) { h += '<span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + catColors[cat].dot + ';margin-right:4px;"></span>' + cat + '</span>'; }
+    h += '</div>';
+    h += '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1px;margin-bottom:1px;">';
+    dayNames.forEach(function(d) { h += '<div style="text-align:center;font-size:12px;font-weight:600;color:var(--navy);padding:6px 0;">' + d + '</div>'; });
+    h += '</div>';
+    var firstDayRaw = new Date(y, m-1, 1).getDay(); var blankCells = Math.min((firstDayRaw+6)%7, 5);
+    var now = new Date(); var kst = new Date(now.getTime()+9*3600000); var todayStr = kst.toISOString().split('T')[0];
+    h += '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1px;">';
+    for (var i=0;i<blankCells;i++) { h += '<div style="height:80px;min-height:80px;background:#fafafa;border-radius:4px;"></div>'; }
+    for (var d=1;d<=lastDate;d++) {
+      var dow = new Date(y,m-1,d).getDay(); if (dow===0||dow===6) continue;
+      var dateStr = y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0'); var isToday = dateStr===todayStr;
+      h += '<div style="height:80px;min-height:80px;padding:3px;overflow:hidden;background:'+(isToday?'#E3F2FD':'white')+';border-radius:4px;border:'+(isToday?'2px solid var(--blue)':'1px solid #f0f0f0')+';"><div style="font-size:11px;font-weight:'+(isToday?'700':'400')+';color:#333;margin-bottom:2px;">'+d+'</div>';
+      (eventsByDate[dateStr]||[]).forEach(function(ev) { var c=catColors[ev.category]||{bg:'#f5f5f5',border:'#999'}; h+='<div style="font-size:9px;padding:1px 3px;margin-bottom:1px;background:'+c.bg+';border-left:2px solid '+c.border+';border-radius:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="'+escapeHtml(ev.title+(ev.time?' '+ev.time:''))+'">'+escapeHtml(ev.title)+'</div>'; });
+      h += '</div>';
+    }
+    h += '</div>';
+    var monthEvents = calendarData.filter(function(ev) { if (!ev.date||!ev.date.startsWith(monthStr)) return false; var d=new Date(ev.date+'T00:00:00').getDay(); return d!==0&&d!==6; });
+    if (monthEvents.length>0) {
+      h += '<div style="margin-top:16px;background:white;border-radius:var(--radius);padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.08);"><h3 style="font-size:14px;color:var(--navy);margin-bottom:10px;">📋 이번 달 일정</h3>';
+      monthEvents.forEach(function(ev) { var c=catColors[ev.category]||{dot:'#999'}; h+='<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid #f5f5f5;font-size:12px;"><span style="color:var(--gray-dark);min-width:50px;">'+ev.date.substring(5)+'</span><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:'+c.dot+';margin-top:5px;flex-shrink:0;"></span><span style="flex:1;">'+escapeHtml(ev.title)+(ev.time?' <span style="color:var(--gray-dark);">'+ev.time+'</span>':'')+'</span></div>'; });
+      h += '</div>';
+    }
+    document.getElementById('calendarContent').innerHTML = h;
+  }
+
+  // ─── 체크리스트 ──────────────────────────────────────
+  var checklistData = null;
+  function getCLStorageKey() { return 'yiss_ta_checklist_' + (currentTA ? currentTA.ta_id : 'unknown'); }
+
+  function openChecklist() {
+    document.getElementById('checklist-modal').style.display = 'flex';
+    if (!checklistData) {
+      callAPI('getChecklistData', { buildingId: currentTA.building_id })
+        .then(function(data) { checklistData = data; renderChecklist(); })
+        .catch(function() { document.getElementById('cl-content').innerHTML = '<div style="text-align:center;color:#c0392b;padding:20px;">데이터를 불러올 수 없습니다.</div>'; });
+    } else { renderChecklist(); }
+  }
+  function closeChecklist() { document.getElementById('checklist-modal').style.display = 'none'; }
+  function getCheckedItems() { try { return JSON.parse(localStorage.getItem(getCLStorageKey()) || '{}'); } catch(e) { return {}; } }
+  function saveCheckedItems(checked) { localStorage.setItem(getCLStorageKey(), JSON.stringify(checked)); }
+
+  function renderChecklist() {
+    var container = document.getElementById('cl-content'); var checked = getCheckedItems();
+    if (!checklistData||!checklistData.categories||!checklistData.categories.length) { container.innerHTML='<div style="text-align:center;color:#6B7280;padding:40px 0;">등록된 체크리스트가 없습니다.</div>'; updateProgress(0,0); return; }
+    document.getElementById('cl-building-name').textContent = currentTA.building_name || currentTA.building_id;
+    var totalItems=0, checkedCount=0, html='';
+    checklistData.categories.forEach(function(cat,ci) {
+      html+='<div style="margin-bottom:16px;"><div style="font-size:12px;font-weight:700;color:var(--navy);padding:6px 10px;background:#EEF2FB;border-radius:6px;margin-bottom:8px;">'+escapeHtml(cat.name)+'</div>';
+      html+='<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="border-bottom:2px solid #E2E6ED;"><th style="width:40px;padding:6px 4px;text-align:center;color:#6B7280;font-size:10px;">체크</th><th style="padding:6px 8px;text-align:left;color:#6B7280;font-size:10px;">업무</th><th style="width:60px;padding:6px 4px;text-align:center;color:#6B7280;font-size:10px;">수량</th><th style="padding:6px 8px;text-align:left;color:#6B7280;font-size:10px;">비고</th></tr></thead><tbody>';
+      cat.items.forEach(function(item,ii) {
+        var key=ci+'-'+ii; var isChecked=checked[key]===true; if(isChecked)checkedCount++; totalItems++;
+        html+='<tr style="border-bottom:1px solid #F0F0F0;'+(isChecked?'background:#F0FAF0;':'')+'cursor:pointer;" onclick="toggleCheckItem(\''+key+'\')">';
+        html+='<td style="text-align:center;padding:10px 4px;"><div style="width:20px;height:20px;border-radius:4px;border:2px solid '+(isChecked?'#1e7e44':'#D1D5DB')+';background:'+(isChecked?'#1e7e44':'white')+';display:inline-flex;align-items:center;justify-content:center;font-size:12px;color:white;">'+(isChecked?'✓':'')+'</div></td>';
+        html+='<td style="padding:10px 8px;'+(isChecked?'text-decoration:line-through;color:#9CA3AF;':'')+'">'+escapeHtml(item.item)+'</td>';
+        html+='<td style="text-align:center;padding:10px 4px;font-size:11px;color:#6B7280;">'+(item.quantity||'')+'</td>';
+        html+='<td style="padding:10px 8px;font-size:11px;color:#9CA3AF;">'+escapeHtml(item.notes||'')+'</td></tr>';
+      });
+      html+='</tbody></table></div>';
+    });
+    container.innerHTML=html; updateProgress(checkedCount, totalItems);
+  }
+  function toggleCheckItem(key) { var c=getCheckedItems(); c[key]=!c[key]; saveCheckedItems(c); renderChecklist(); }
+  function updateProgress(done,total) { document.getElementById('cl-progress-text').textContent=done+' / '+total; document.getElementById('cl-progress-bar').style.width=(total>0?(done/total*100):0)+'%'; }
+  function resetChecklist() { if(confirm('체크 상태를 모두 초기화하시겠습니까?')) { localStorage.removeItem(getCLStorageKey()); renderChecklist(); } }
+
+  // ─── 유틸리티 ────────────────────────────────────────
+  function showToast(msg, type) { var t=document.getElementById('toast'); t.textContent=msg; t.className='toast '+type+' show'; setTimeout(function(){t.classList.remove('show');},3000); }
+  function escapeHtml(str) { if(!str)return''; return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+</script>
+</body>
+</html>
