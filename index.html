@@ -554,9 +554,37 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_sxDCF3Gj2740FMhvDLqwP0
     );
   }
   function stopGPS() { if (gpsWatchId !== null) { navigator.geolocation.clearWatch(gpsWatchId); gpsWatchId = null; } currentGPS = null; }
-  function updateGPSUI(good, text) {
+function updateGPSUI(good, text, helpType) {
     document.getElementById('gpsDot').className = 'gps-dot' + (good === true ? ' good' : good === false ? ' bad' : '');
     document.getElementById('gpsText').textContent = text;
+
+    var help = document.getElementById('gpsHelp');
+    if (good === true || !helpType) {
+      help.style.display = 'none';
+      return;
+    }
+
+    var guides = {
+      denied:
+        '<b>📍 위치 권한이 꺼져 있어요</b><br>' +
+        '<b>[iPhone]</b> 설정 → 개인정보 보호 및 보안 → 위치 서비스 → Safari(또는 Chrome) → "앱을 사용하는 동안" 선택<br>' +
+        '<b>[Android]</b> 설정 → 위치 → 앱 권한 → 브라우저 → "허용"<br>' +
+        '설정 후 이 화면을 <b>새로고침</b>해주세요.',
+      lowAccuracy:
+        '<b>📡 GPS 정확도가 낮아요</b><br>' +
+        '① 건물 <b>창가나 입구 쪽</b>으로 이동해보세요<br>' +
+        '② 실내 깊숙한 곳은 신호가 약해요<br>' +
+        '③ 잠시 기다리면 정확도가 올라갑니다',
+      noGPS:
+        '<b>❓ GPS 신호가 안 잡혀요</b><br>' +
+        '① 핸드폰 <b>위치(GPS) 기능</b>이 켜져 있는지 확인<br>' +
+        '② 비행기 모드가 꺼져 있는지 확인<br>' +
+        '③ 브라우저를 완전히 닫고 다시 열어보세요<br>' +
+        '그래도 안 되면 관리자에게 이 화면을 캡처해서 보내주세요.'
+    };
+
+    help.innerHTML = guides[helpType] || '';
+    help.style.display = guides[helpType] ? 'block' : 'none';
   }
 
   // ─── 출퇴근 ──────────────────────────────────────────
