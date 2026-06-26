@@ -296,6 +296,10 @@
         <div class="gps-dot" id="gpsDot"></div>
         <span id="gpsText">GPS 확인 중...</span>
       </div>
+
+      <!-- GPS 문제 해결 가이드 (상황별 자동 표시) -->
+      <div id="gpsHelp" style="display:none;background:#FFF3E0;border:1px solid #FFB74D;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#5D4037;line-height:1.7;"></div>
+      
       <div class="action-buttons">
         <button class="action-btn check-in" id="checkInBtn" onclick="handleCheckIn()" disabled><span class="btn-icon">🟢</span>출근</button>
         <button class="action-btn check-out" id="checkOutBtn" onclick="handleCheckOut()" disabled><span class="btn-icon">🔵</span>퇴근</button>
