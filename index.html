@@ -535,20 +535,32 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_sxDCF3Gj2740FMhvDLqwP0
 
   // ─── GPS ──────────────────────────────────────────────
   function startGPS() {
-    if (!navigator.geolocation) { updateGPSUI(false, 'GPS를 지원하지 않는 브라우저입니다.'); return; }
+    if (!navigator.geolocation) {
+      updateGPSUI(false, 'GPS를 지원하지 않는 브라우저입니다.', 'noGPS');
+      return;
+    }
+
     updateGPSUI(null, 'GPS 위치 확인 중...');
+
     gpsWatchId = navigator.geolocation.watchPosition(
       function(pos) {
         currentGPS = { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy };
         var accStr = Math.round(currentGPS.accuracy) + 'm';
-        if (currentGPS.accuracy <= 150) { updateGPSUI(true, '위치 확인됨 (정확도: ' + accStr + ')'); }
-        else { updateGPSUI(false, '정확도 낮음 (' + accStr + ') — 실외로 이동해주세요'); }
+        if (currentGPS.accuracy <= 250) {
+          updateGPSUI(true, '위치 확인됨 (정확도: ' + accStr + ')');
+        } else {
+          updateGPSUI(false, '정확도 낮음 (' + accStr + ') — 실외로 이동해주세요', 'lowAccuracy');
+        }
         loadTodayStatus();
       },
       function(err) {
         currentGPS = null;
-        if (err.code === 1) { updateGPSUI(false, '위치 권한이 차단되었습니다. 브라우저 설정에서 허용해주세요.'); }
-        else { updateGPSUI(false, 'GPS 오류: ' + err.message); }
+        if (err.code === 1) {
+          updateGPSUI(false, '위치 권한이 차단되었습니다.', 'denied');
+        } else {
+          updateGPSUI(false, 'GPS 오류: ' + err.message, 'noGPS');
+        }
+        loadTodayStatus();
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
     );
