@@ -305,13 +305,10 @@
         <button class="action-btn check-out" id="checkOutBtn" onclick="handleCheckOut()" disabled><span class="btn-icon">🔵</span>퇴근</button>
       </div>
       <div style="text-align:center;padding:10px 16px;margin-bottom:8px;background:#FFF8E1;border-radius:8px;border:1px solid #FFE082;">
-  <div style="font-size:12px;color:#F57F17;margin-bottom:4px;">🍽️ 점심시간 1시간은 근무시간에서 자동 제외됩니다.</div>
-  <div style="font-size:12px;color:#F57F17;margin-bottom:4px;">⏰ 출근/퇴근은 하루에 각 1회만 가능합니다.</div>
-  <div style="font-size:12px;color:#F57F17;margin-bottom:4px;">📝 퇴근 후 근로내용을 꼭 입력해주세요.</div>
-  <div style="font-size:12px;color:#F57F17;">⏱️ 근무시간은 5분 단위로 반올림되어 계산됩니다.</div>
-        <div style="text-align:center;padding:10px 16px;margin-bottom:8px;background:#FFF8E1;border-radius:8px;border:1px solid #FFE082;">
-
-</div>
+        <div style="font-size:12px;color:#F57F17;margin-bottom:4px;">🍽️ 점심시간 1시간은 근무시간에서 자동 제외됩니다.</div>
+        <div style="font-size:12px;color:#F57F17;margin-bottom:4px;">⏰ 출근/퇴근은 하루에 각 1회만 가능합니다.</div>
+        <div style="font-size:12px;color:#F57F17;margin-bottom:4px;">📝 퇴근 후 근로내용을 꼭 입력해주세요.</div>
+        <div style="font-size:12px;color:#F57F17;">⏱️ 근무시간은 5분 단위로 반올림되어 계산됩니다.</div>
       </div>
     </div>
     <div id="tab-records" class="tab-content">
@@ -546,7 +543,7 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_sxDCF3Gj2740FMhvDLqwP0
       function(pos) {
         currentGPS = { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy };
         var accStr = Math.round(currentGPS.accuracy) + 'm';
-        if (currentGPS.accuracy <= 250) {
+        if (currentGPS.accuracy <= 150) {
           updateGPSUI(true, '위치 확인됨 (정확도: ' + accStr + ')');
         } else {
           updateGPSUI(false, '정확도 낮음 (' + accStr + ') — 실외로 이동해주세요', 'lowAccuracy');
