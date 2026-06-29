@@ -378,16 +378,44 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_sxDCF3Gj2740FMhvDLqwP0
 
   // ★ fetch 래퍼 — google.script.run 대체
   function callAPI(action, params) {
+  // 세션 토큰 자동 첨부(있을 때만). 호출부 수정 불필요한 단일 지점.
+  var merged = Object.assign({}, params || {});
+  var token = localStorage.getItem('yiss_token');
+  if (token) merged.token = token;
   return fetch(API_URL, {
     method: 'POST',
-    body: JSON.stringify({ action: action, params: params || {} })
+    body: JSON.stringify({ action: action, params: merged })
   })
   .then(function(res) { return res.json(); })
+  .then(function(data) {
+    // 세션 만료/무효 → 조용히 로그인 화면(토스트 금지).
+    // 호출부의 .then/.catch가 일절 실행되지 않도록 영원히 settle되지 않는
+    // 프로미스를 반환해 체인을 멈춘다(throw 시 호출부 .catch가 오류 토스트를 띄움).
+    if (data && data.code === 'RELOGIN') {
+      handleSessionExpired();
+      return new Promise(function() {});
+    }
+    return data;
+  })
   .catch(function(err) {
     console.error('API error:', action, err);
     throw err;
   });
 }
+
+  // 세션 만료 처리: 세션 정리 + 로그인 화면 표시(토스트·에러 텍스트 없음)
+  function handleSessionExpired() {
+    currentTA = null;
+    localStorage.removeItem('yiss_ta');
+    localStorage.removeItem('yiss_token');
+    localStorage.removeItem('yiss_last_access');
+    stopGPS();
+    var wdo = document.getElementById('workDescOverlay'); if (wdo) wdo.remove();
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('mainScreen').style.display = 'none';
+    document.getElementById('consentScreen').style.display = 'none';
+    document.getElementById('loginError').style.display = 'none';
+  }
 
   // ─── 전역 상태 ────────────────────────────────────────
   var currentTA = null;
@@ -456,6 +484,7 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_sxDCF3Gj2740FMhvDLqwP0
         localStorage.setItem('yiss_last_login', JSON.stringify({ ta_id: result.data.ta_id, time: Date.now() }));
         currentTA = result.data;
         localStorage.setItem('yiss_ta', JSON.stringify(currentTA));
+        if (result.data.token) localStorage.setItem('yiss_token', result.data.token);
         if (!localStorage.getItem('yiss_consent')) { showConsentScreen(); } else { showMainScreen(); }
       })
       .catch(function(err) {
@@ -469,6 +498,7 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_sxDCF3Gj2740FMhvDLqwP0
   function handleLogout() {
     currentTA = null;
     localStorage.removeItem('yiss_ta');
+    localStorage.removeItem('yiss_token');
     localStorage.removeItem('yiss_last_access');
     stopGPS();
     document.getElementById('loginScreen').style.display = 'flex';
